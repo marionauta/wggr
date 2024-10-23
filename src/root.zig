@@ -91,7 +91,10 @@ pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
 }
 
 pub fn MeasureText(text: [:0]const u8, fontSize: c_int) c_int {
-    return fontSize * @as(c_int, @intCast(text.len));
+    // TODO: currently approximated for Helvetica, calculate better.
+    const letter_width = @as(f32, @floatFromInt(fontSize)) * 0.5;
+    const length = @as(f32, @floatFromInt(text.len));
+    return @intFromFloat(letter_width * length);
 }
 
 pub fn DrawText(text: [:0]const u8, posX: c_int, posY: c_int, fontSize: c_int, color: Color) void {
@@ -108,10 +111,6 @@ pub const Image = extern struct {
     data: [*]const u8,
     dataSize: c_int,
     fileType: FileType,
-
-    pub fn deinit(self: Image) void {
-        _ = self;
-    }
 };
 
 pub export fn LoadImageFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int) Image {
@@ -182,9 +181,7 @@ pub export fn IsMouseButtonReleased(button: c_int) bool {
 }
 
 pub export fn CheckCollisionPointRec(point: Vector2, rec: Rectangle) bool {
-    _ = point;
-    _ = rec;
-    return false;
+    return (point.x >= rec.x) and (point.x < (rec.x + rec.width)) and (point.y >= rec.y) and (point.y < (rec.y + rec.height));
 }
 
 fn set_rgba_color(c: ?cg.CGContextRef, color: Color) void {
