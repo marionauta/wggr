@@ -1,5 +1,7 @@
 # wggr
 
+_(pronounced wagger) — **W**atch **G**ame **GR**aphics_
+
 A set of functions to ease drawing colors, rectangles, sprites and text onto a
 [`CGContext`][cgcontext]. This library contains bindings to some of Apple's Core
 Graphics framework functions. This library also contains easier to use functions
