@@ -3,7 +3,9 @@ const cg = @import("coregraphics/root.zig");
 
 const PlatformData = extern struct {
     context: ?cg.CGContextRef = null,
+    frame_time: f32 = 0,
     last_tap: cg.CGPoint = cg.CGPoint.ZERO,
+    current_camera: Camera2D = Camera2D.default(),
 };
 
 export var DATA: PlatformData = .{};
@@ -30,8 +32,19 @@ pub const Rectangle = extern struct {
 };
 
 pub const Vector2 = extern struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0,
+    y: f32 = 0,
+};
+
+pub const Camera2D = extern struct {
+    offset: Vector2 = .{},
+    target: Vector2 = .{},
+    rotation: f32 = 0,
+    zoom: f32 = 0,
+
+    fn default() Camera2D {
+        return .{ .zoom = 1 };
+    }
 };
 
 pub export fn InitWindow(width: c_int, height: c_int, title: [*:0]const u8) void {
@@ -47,10 +60,11 @@ pub export fn CloseWindow() void {
 
 pub export fn SetTargetFPS(fps: c_int) void {
     _ = fps;
+    unreachable;
 }
 
 pub export fn GetFrameTime() f32 {
-    unreachable;
+    return DATA.frame_time;
 }
 
 pub export fn WindowShouldClose() bool {
@@ -71,6 +85,14 @@ pub export fn EndDrawing() void {
     DATA.last_tap = cg.CGPoint.ZERO;
 }
 
+pub export fn BeginMode2D(camera: Camera2D) void {
+    DATA.current_camera = camera;
+}
+
+pub export fn EndMode2D() void {
+    DATA.current_camera = Camera2D.default();
+}
+
 pub export fn ClearBackground(color: Color) void {
     const rec = Rectangle{
         .x = 0,
@@ -82,12 +104,16 @@ pub export fn ClearBackground(color: Color) void {
 }
 
 pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
+    const camera = DATA.current_camera;
     const rect = cg.CGRect{
-        .origin = cg.CGPoint{ .x = rec.x, .y = rec.y },
+        .origin = cg.CGPoint{
+            .x = rec.x + camera.offset.x,
+            .y = rec.y + camera.offset.y,
+        },
         .size = cg.CGSize{ .width = rec.width, .height = rec.height },
     };
     set_rgba_color(DATA.context, color);
-    DATA.context.?.fill_rect(into_cg_rect(rect));
+    if (DATA.context) |ctx| ctx.fill_rect(into_cg_rect(rect));
 }
 
 pub fn MeasureText(text: [:0]const u8, fontSize: c_int) c_int {
@@ -147,8 +173,8 @@ pub export fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32
     _ = tint;
     const rect = cg.CGRect{
         .origin = .{
-            .x = position.x,
-            .y = position.y,
+            .x = position.x + DATA.current_camera.offset.x,
+            .y = position.y + DATA.current_camera.offset.y,
         },
         .size = .{
             .width = @as(cg.CGFloat, @floatFromInt(texture.get_width())) * scale,
