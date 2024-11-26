@@ -5,6 +5,7 @@ const PlatformData = extern struct {
     context: ?cg.CGContextRef = null,
     frame_time: f32 = 0,
     last_tap: cg.CGPoint = cg.CGPoint.ZERO,
+    last_wheel_move: f32 = 0,
     current_camera: Camera2D = Camera2D.default(),
 };
 
@@ -83,6 +84,7 @@ pub export fn BeginDrawing() void {}
 
 pub export fn EndDrawing() void {
     DATA.last_tap = cg.CGPoint.ZERO;
+    DATA.last_wheel_move = 0;
 }
 
 pub export fn BeginMode2D(camera: Camera2D) void {
@@ -228,6 +230,10 @@ pub export fn IsMouseButtonReleased(button: c_int) bool {
     _ = button;
     const last = GetMousePosition();
     return last.x != 0 and last.y != 0;
+}
+
+pub export fn GetMouseWheelMove() f32 {
+    return DATA.last_wheel_move;
 }
 
 pub export fn CheckCollisionPointRec(point: Vector2, rec: Rectangle) bool {
