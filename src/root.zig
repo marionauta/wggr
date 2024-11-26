@@ -169,19 +169,43 @@ pub export fn DrawTexture(texture: Texture2D, posX: c_int, posY: c_int, tint: Co
 }
 
 pub export fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32, scale: f32, tint: Color) void {
+    const source = Rectangle{
+        .width = @floatFromInt(texture.get_width()),
+        .height = @floatFromInt(texture.get_height()),
+    };
+    const dest = Rectangle{
+        .x = position.x,
+        .y = position.y,
+        .width = source.width * scale,
+        .height = source.height * scale,
+    };
+    // TODO: right now all calls to `pro` create a copy of the image.
+    DrawTexturePro(texture, source, dest, Vector2{}, rotation, tint);
+}
+
+pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectangle, origin: Vector2, rotation: f32, tint: Color) void {
+    // TODO: rotation and tint are ignored.
     _ = rotation;
     _ = tint;
+
+    const _source = cg.CGRect{
+        .origin = .{ .x = source.x, .y = source.y },
+        .size = .{ .width = source.width, .height = source.height },
+    };
+    const cropped = cg.CGImageCreateWithImageInRect(texture, _source);
+    defer cropped.deinit();
+
     const rect = cg.CGRect{
         .origin = .{
-            .x = position.x + DATA.current_camera.offset.x,
-            .y = position.y + DATA.current_camera.offset.y,
+            .x = dest.x - origin.x + DATA.current_camera.offset.x,
+            .y = dest.y - origin.y + DATA.current_camera.offset.y,
         },
         .size = .{
-            .width = @as(cg.CGFloat, @floatFromInt(texture.get_width())) * scale,
-            .height = @as(cg.CGFloat, @floatFromInt(texture.get_height())) * scale,
+            .height = dest.height,
+            .width = dest.width,
         },
     };
-    cg.CGContextDrawImage(DATA.context, into_cg_rect(rect), texture);
+    cg.CGContextDrawImage(DATA.context, into_cg_rect(rect), cropped);
 }
 
 pub export fn GetMousePosition() Vector2 {

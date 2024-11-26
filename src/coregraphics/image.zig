@@ -12,10 +12,11 @@ pub const CGImageRef = *extern opaque {
     }
 
     pub fn deinit(self: CGImageRef) void {
-        CGImageRelease(self);
+        return CGImageRelease(self);
     }
 };
 
+pub extern fn CGImageCreateWithImageInRect(image: CGImageRef, rect: t.CGRect) CGImageRef;
 pub extern fn CGImageCreateWithPNGDataProvider(
     source: dp.CGDataProviderRef,
     decode: ?*const t.CGFloat,
