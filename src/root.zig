@@ -96,9 +96,10 @@ pub export fn EndMode2D() void {
 }
 
 pub export fn ClearBackground(color: Color) void {
+    const camera = DATA.current_camera;
     const rec = Rectangle{
-        .x = 0,
-        .y = 0,
+        .x = 0 - camera.offset.x,
+        .y = 0 - camera.offset.y,
         .width = @floatFromInt(GetScreenWidth()),
         .height = @floatFromInt(GetScreenHeight()),
     };
@@ -254,8 +255,42 @@ pub export fn GetMouseWheelMove() f32 {
     return DATA.last_wheel_move;
 }
 
+/// Check collision between two rectangles
+pub export fn CheckCollisionRecs(rec1: Rectangle, rec2: Rectangle) bool {
+    return ((rec1.x < (rec2.x + rec2.width) and (rec1.x + rec1.width) > rec2.x) and (rec1.y < (rec2.y + rec2.height) and (rec1.y + rec1.height) > rec2.y));
+}
+
+/// Check if point is inside rectangle
 pub export fn CheckCollisionPointRec(point: Vector2, rec: Rectangle) bool {
     return (point.x >= rec.x) and (point.x < (rec.x + rec.width)) and (point.y >= rec.y) and (point.y < (rec.y + rec.height));
+}
+
+/// Get collision rectangle for two rectangles collision
+pub export fn GetCollisionRec(rec1: Rectangle, rec2: Rectangle) Rectangle {
+    var overlap = Rectangle{};
+
+    const left = if (rec1.x > rec2.x) rec1.x else rec2.x;
+    const right1 = rec1.x + rec1.width;
+    const right2 = rec2.x + rec2.width;
+    const right = if (right1 < right2) right1 else right2;
+    const top = if (rec1.y > rec2.y) rec1.y else rec2.y;
+    const bottom1 = rec1.y + rec1.height;
+    const bottom2 = rec2.y + rec2.height;
+    const bottom = if (bottom1 < bottom2) bottom1 else bottom2;
+
+    if ((left < right) and (top < bottom)) {
+        overlap.x = left;
+        overlap.y = top;
+        overlap.width = right - left;
+        overlap.height = bottom - top;
+    }
+
+    return overlap;
+}
+
+pub export fn IsKeyReleased(key: c_int) bool {
+    _ = key;
+    return false;
 }
 
 fn set_rgba_color(c: ?cg.CGContextRef, color: Color) void {
