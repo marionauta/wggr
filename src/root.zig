@@ -106,6 +106,21 @@ pub export fn ClearBackground(color: Color) void {
     DrawRectangleRec(rec, color);
 }
 
+/// Draw a color-filled circle (Vector version)
+pub export fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
+    const camera = DATA.current_camera;
+    const rect = cg.CGRect{
+        .origin = cg.CGPoint{
+            .x = (center.x - radius) + camera.offset.x,
+            .y = (center.y - radius) + camera.offset.y,
+        },
+        .size = cg.CGSize{ .width = radius * 2, .height = radius * 2 },
+    };
+    set_rgba_color(DATA.context, color);
+    if (DATA.context) |ctx| ctx.fill_ellipse_in_rect(into_cg_rect(rect));
+}
+
+/// Draw a color-filled rectangle
 pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
     const camera = DATA.current_camera;
     const rect = cg.CGRect{
@@ -258,6 +273,34 @@ pub export fn GetMouseWheelMove() f32 {
 /// Check collision between two rectangles
 pub export fn CheckCollisionRecs(rec1: Rectangle, rec2: Rectangle) bool {
     return ((rec1.x < (rec2.x + rec2.width) and (rec1.x + rec1.width) > rec2.x) and (rec1.y < (rec2.y + rec2.height) and (rec1.y + rec1.height) > rec2.y));
+}
+
+/// Check collision between circle and rectangle
+pub export fn CheckCollisionCircleRec(center: Vector2, radius: f32, rec: Rectangle) bool {
+    const recCenterX = rec.x + rec.width / 2.0;
+    const recCenterY = rec.y + rec.height / 2.0;
+
+    const dx = @abs(center.x - recCenterX);
+    const dy = @abs(center.y - recCenterY);
+
+    if (dx > (rec.width / 2.0 + radius)) {
+        return false;
+    }
+    if (dy > (rec.height / 2.0 + radius)) {
+        return false;
+    }
+
+    if (dx <= (rec.width / 2.0)) {
+        return true;
+    }
+    if (dy <= (rec.height / 2.0)) {
+        return true;
+    }
+
+    const cornerDistanceSq = (dx - rec.width / 2.0) * (dx - rec.width / 2.0) +
+        (dy - rec.height / 2.0) * (dy - rec.height / 2.0);
+
+    return (cornerDistanceSq <= (radius * radius));
 }
 
 /// Check if point is inside rectangle
