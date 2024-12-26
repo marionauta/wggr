@@ -6,6 +6,7 @@ const PlatformData = extern struct {
     frame_time: f32 = 0,
     last_tap: cg.CGPoint = cg.CGPoint.ZERO,
     last_wheel_move: f32 = 0,
+    window_focused: bool = true,
     current_camera: Camera2D = Camera2D.default(),
 };
 
@@ -48,6 +49,10 @@ pub const Camera2D = extern struct {
     }
 };
 
+pub const KEY_ONE = 49;
+pub const KEY_SPACE = 32;
+pub const KEY_P = 80;
+
 pub export fn InitWindow(width: c_int, height: c_int, title: [*:0]const u8) void {
     _ = width;
     _ = height;
@@ -57,6 +62,10 @@ pub export fn InitWindow(width: c_int, height: c_int, title: [*:0]const u8) void
 
 pub export fn CloseWindow() void {
     unreachable;
+}
+
+pub export fn IsWindowFocused() bool {
+    return DATA.window_focused;
 }
 
 pub export fn SetTargetFPS(fps: c_int) void {
@@ -116,7 +125,7 @@ pub export fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
         },
         .size = cg.CGSize{ .width = radius * 2, .height = radius * 2 },
     };
-    set_rgba_color(DATA.context, color);
+    set_rgba_fill_color(DATA.context, color);
     if (DATA.context) |ctx| ctx.fill_ellipse_in_rect(into_cg_rect(rect));
 }
 
@@ -130,20 +139,38 @@ pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
         },
         .size = cg.CGSize{ .width = rec.width, .height = rec.height },
     };
-    set_rgba_color(DATA.context, color);
-    if (DATA.context) |ctx| ctx.fill_rect(into_cg_rect(rect));
+    if (DATA.context) |ctx| {
+        set_rgba_fill_color(DATA.context, color);
+        ctx.fill_rect(into_cg_rect(rect));
+    }
+}
+
+/// Draw rectangle outline with extended parameters
+pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color) void {
+    const camera = DATA.current_camera;
+    const rect = cg.CGRect{
+        .origin = cg.CGPoint{
+            .x = rec.x + camera.offset.x,
+            .y = rec.y + camera.offset.y,
+        },
+        .size = cg.CGSize{ .width = rec.width, .height = rec.height },
+    };
+    if (DATA.context) |ctx| {
+        set_rgba_stroke_color(DATA.context, color);
+        ctx.stroke_rect(into_cg_rect(rect), lineThick);
+    }
 }
 
 pub fn MeasureText(text: [:0]const u8, fontSize: c_int) c_int {
     // TODO: currently approximated for Helvetica, calculate better.
-    const letter_width = @as(f32, @floatFromInt(fontSize)) * 0.5;
+    const letter_width = @as(f32, @floatFromInt(fontSize)) * 0.6;
     const length = @as(f32, @floatFromInt(text.len));
     return @intFromFloat(letter_width * length);
 }
 
 pub fn DrawText(text: [:0]const u8, posX: c_int, posY: c_int, fontSize: c_int, color: Color) void {
     cg.CGContextSelectFont(DATA.context, "Helvetica", @floatFromInt(fontSize), .kCGEncodingMacRoman);
-    set_rgba_color(DATA.context, color);
+    set_rgba_fill_color(DATA.context, color);
     const y = GetScreenHeight() - posY - fontSize;
     cg.CGContextShowTextAtPoint(DATA.context, @floatFromInt(posX), @floatFromInt(y), text, text.len);
 }
@@ -207,11 +234,11 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     _ = tint;
 
     // raylib flips the image if the source width or height is negative.
-    const x_scale: cg.CGFloat = if (source.width > 0) 1 else -1;
-    const x_offset: cg.CGFloat = if (x_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenWidth())) - dest.width);
-    const y_scale: cg.CGFloat = if (source.height > 0) 1 else -1;
+    // const x_scale: cg.CGFloat = if (source.width > 0) 1 else -1;
+    // const x_offset: cg.CGFloat = if (x_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenWidth())) - dest.width);
+    // const y_scale: cg.CGFloat = if (source.height > 0) 1 else -1;
     // TODO: this is just a hardcoded value, calculate better
-    const y_offset: cg.CGFloat = if (y_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenHeight()))) - dest.y + dest.height + 90;
+    // const y_offset: cg.CGFloat = if (y_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenHeight()))) - dest.y + dest.height + 90;
 
     const _source = cg.CGRect{
         .origin = .{ .x = source.x, .y = source.y },
@@ -231,11 +258,11 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
         },
     };
 
-    CGContextSaveGState(DATA.context);
-    CGContextTranslateCTM(DATA.context, x_offset, y_offset);
-    CGContextScaleCTM(DATA.context, x_scale, y_scale);
+    // CGContextSaveGState(DATA.context);
+    // CGContextTranslateCTM(DATA.context, x_offset, y_offset);
+    // CGContextScaleCTM(DATA.context, x_scale, y_scale);
     cg.CGContextDrawImage(DATA.context, into_cg_rect(rect), cropped);
-    CGContextRestoreGState(DATA.context);
+    // CGContextRestoreGState(DATA.context);
 }
 
 extern fn CGContextSaveGState(c: ?cg.CGContextRef) void;
@@ -331,12 +358,27 @@ pub export fn GetCollisionRec(rec1: Rectangle, rec2: Rectangle) Rectangle {
     return overlap;
 }
 
+pub export fn IsKeyPressed(key: c_int) bool {
+    _ = key;
+    return false;
+}
+
 pub export fn IsKeyReleased(key: c_int) bool {
     _ = key;
     return false;
 }
 
-fn set_rgba_color(c: ?cg.CGContextRef, color: Color) void {
+fn set_rgba_fill_color(c: ?cg.CGContextRef, color: Color) void {
+    cg.CGContextSetRGBFillColor(
+        c,
+        @as(cg.CGFloat, @floatFromInt(color.r)) / 255.0,
+        @as(cg.CGFloat, @floatFromInt(color.g)) / 255.0,
+        @as(cg.CGFloat, @floatFromInt(color.b)) / 255.0,
+        @as(cg.CGFloat, @floatFromInt(color.a)) / 255.0,
+    );
+}
+
+fn set_rgba_stroke_color(c: ?cg.CGContextRef, color: Color) void {
     cg.CGContextSetRGBFillColor(
         c,
         @as(cg.CGFloat, @floatFromInt(color.r)) / 255.0,
