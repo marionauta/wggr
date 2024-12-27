@@ -19,13 +19,6 @@ pub const Color = extern struct {
     a: u8,
 };
 
-pub const BLACK = Color{ .r = 0, .g = 0, .b = 0, .a = 255 };
-pub const GRAY = Color{ .r = 130, .g = 130, .b = 130, .a = 255 };
-pub const GREEN = Color{ .r = 0, .g = 228, .b = 48, .a = 255 };
-pub const RED = Color{ .r = 230, .g = 41, .b = 55, .a = 255 };
-pub const DARKGRAY = Color{ .r = 80, .g = 80, .b = 80, .a = 255 };
-pub const WHITE = Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
-
 pub const Rectangle = extern struct {
     x: f32 = 0,
     y: f32 = 0,
@@ -52,33 +45,14 @@ pub const Camera2D = extern struct {
 pub const KEY_ONE = 49;
 pub const KEY_SPACE = 32;
 pub const KEY_P = 80;
-
-pub export fn InitWindow(width: c_int, height: c_int, title: [*:0]const u8) void {
-    _ = width;
-    _ = height;
-    _ = title;
-    unreachable;
-}
-
-pub export fn CloseWindow() void {
-    unreachable;
-}
+pub const KEY_W = 87;
 
 pub export fn IsWindowFocused() bool {
     return DATA.window_focused;
 }
 
-pub export fn SetTargetFPS(fps: c_int) void {
-    _ = fps;
-    unreachable;
-}
-
 pub export fn GetFrameTime() f32 {
     return DATA.frame_time;
-}
-
-pub export fn WindowShouldClose() bool {
-    unreachable;
 }
 
 pub export fn GetScreenWidth() c_int {
@@ -282,11 +256,18 @@ pub const MouseButton = enum(c_int) {
 
 pub const MOUSE_BUTTON_LEFT = @intFromEnum(MouseButton.MOUSE_BUTTON_LEFT);
 
+/// Check if a mouse button has been pressed once (currently the same as IsMouseButtonReleased)
+pub export fn IsMouseButtonPressed(button: c_int) bool {
+    return IsMouseButtonReleased(button);
+}
+
+/// Check if a mouse button is being pressed (currently always false)
 pub export fn IsMouseButtonDown(button: c_int) bool {
     _ = button;
     return false;
 }
 
+/// Check if a mouse button has been released once
 pub export fn IsMouseButtonReleased(button: c_int) bool {
     _ = button;
     const last = GetMousePosition();
