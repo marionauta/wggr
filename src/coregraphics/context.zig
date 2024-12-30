@@ -28,11 +28,16 @@ pub const CGContextRef = *extern opaque {
     }
 };
 
+const CGInterpolationQuality = enum(i32) {
+    kCGInterpolationNone = 1,
+};
+
 const CGTextEncoding = enum(i32) {
     kCGEncodingFontSpecific,
     kCGEncodingMacRoman,
 };
 
+pub extern fn CGContextSetInterpolationQuality(c: ?CGContextRef, quality: CGInterpolationQuality) void;
 pub extern fn CGContextSetRGBFillColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
 pub extern fn CGContextSetRGBStrokeColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
 pub extern fn CGContextFillEllipseInRect(c: ?CGContextRef, rect: CGRect) void;

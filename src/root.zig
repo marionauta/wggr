@@ -63,7 +63,9 @@ pub export fn GetScreenHeight() c_int {
     return @intCast(DATA.context.?.get_height());
 }
 
-pub export fn BeginDrawing() void {}
+pub export fn BeginDrawing() void {
+    cg.CGContextSetInterpolationQuality(DATA.context, .kCGInterpolationNone);
+}
 
 pub export fn EndDrawing() void {
     DATA.last_tap = cg.CGPoint.ZERO;
