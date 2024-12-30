@@ -1,6 +1,7 @@
 const types = @import("types.zig");
 const bc = @import("bitmap_context.zig");
 const img = @import("image.zig");
+const font = @import("font.zig");
 
 const CGFloat = types.CGFloat;
 const CGRect = types.CGRect;
@@ -32,11 +33,6 @@ const CGInterpolationQuality = enum(i32) {
     kCGInterpolationNone = 1,
 };
 
-const CGTextEncoding = enum(i32) {
-    kCGEncodingFontSpecific,
-    kCGEncodingMacRoman,
-};
-
 pub extern fn CGContextSetInterpolationQuality(c: ?CGContextRef, quality: CGInterpolationQuality) void;
 pub extern fn CGContextSetRGBFillColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
 pub extern fn CGContextSetRGBStrokeColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
@@ -44,8 +40,9 @@ pub extern fn CGContextFillEllipseInRect(c: ?CGContextRef, rect: CGRect) void;
 pub extern fn CGContextFillRect(c: ?CGContextRef, rect: CGRect) void;
 pub extern fn CGContextStrokeRect(c: ?CGContextRef, rect: CGRect) void;
 pub extern fn CGContextSetLineWidth(c: ?CGContextRef, width: CGFloat) void;
+pub extern fn CGContextSetCharacterSpacing(c: ?CGContextRef, spacing: CGFloat) void;
+pub extern fn CGContextSetFont(c: ?CGContextRef, font: font.CGFontRef) void;
+pub extern fn CGContextSetFontSize(c: ?CGContextRef, size: CGFloat) void;
 pub extern fn CGContextSetTextPosition(c: ?CGContextRef, x: CGFloat, y: CGFloat) void;
-pub extern fn CGContextSelectFont(c: ?CGContextRef, name: [*:0]const u8, size: CGFloat, textEncoding: CGTextEncoding) void;
-pub extern fn CGContextShowText(c: ?CGContextRef, string: [*:0]const u8, length: usize) void;
-pub extern fn CGContextShowTextAtPoint(c: ?CGContextRef, x: CGFloat, y: CGFloat, string: [*:0]const u8, length: usize) void;
+pub extern fn CGContextShowGlyphs(c: ?CGContextRef, g: [*]const font.CGGlyph, count: usize) void;
 pub extern fn CGContextDrawImage(c: ?CGContextRef, rect: CGRect, image: img.CGImageRef) void;

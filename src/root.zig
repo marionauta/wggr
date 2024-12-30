@@ -1,3 +1,4 @@
+const std = @import("std");
 const cf = @import("corefoundation/root.zig");
 const cg = @import("coregraphics/root.zig");
 
@@ -137,18 +138,37 @@ pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color)
     }
 }
 
-pub fn MeasureText(text: [:0]const u8, fontSize: c_int) c_int {
-    // TODO: currently approximated for Helvetica, calculate better.
-    const letter_width = @as(f32, @floatFromInt(fontSize)) * 0.6;
-    const length = @as(f32, @floatFromInt(text.len));
-    return @intFromFloat(letter_width * length);
+/// Measure string size for Font
+pub fn MeasureTextEx(font: Font, text: [:0]const u8, fontSize: f32, spacing: f32) Vector2 {
+    const units: f32 = @floatFromInt(cg.CGFontGetUnitsPerEm(font.font));
+    var res = Vector2{ .y = fontSize };
+    var glyph = [1]cg.CGGlyph{0};
+    var advance = [1]c_int{0};
+    for (text) |char| {
+        glyph[0] = font.glyph(char);
+        if (!cg.CGFontGetGlyphAdvances(font.font, &glyph, 1, &advance)) {
+            return res;
+        }
+        res.x += spacing + @as(f32, @floatFromInt(advance[0])) / units * fontSize;
+    }
+    return res;
 }
 
-pub fn DrawText(text: [:0]const u8, posX: c_int, posY: c_int, fontSize: c_int, color: Color) void {
-    cg.CGContextSelectFont(DATA.context, "Helvetica", @floatFromInt(fontSize), .kCGEncodingMacRoman);
-    set_rgba_fill_color(DATA.context, color);
-    const y = GetScreenHeight() - posY - fontSize;
-    cg.CGContextShowTextAtPoint(DATA.context, @floatFromInt(posX), @floatFromInt(y), text, text.len);
+/// Draw text using font and additional parameters
+pub fn DrawTextEx(font: Font, text: [:0]const u8, position: Vector2, fontSize: f32, spacing: f32, tint: Color) void {
+    const ctx = DATA.context orelse return;
+    cg.CGContextSetFont(ctx, font.font);
+    cg.CGContextSetFontSize(ctx, fontSize);
+    cg.CGContextSetCharacterSpacing(ctx, spacing);
+    set_rgba_fill_color(ctx, tint);
+    const point = into_cg_point(.{ .x = position.x, .y = position.y + fontSize });
+    cg.CGContextSetTextPosition(ctx, point.x, point.y);
+    var glyphs = std.ArrayList(cg.CGGlyph).initCapacity(std.heap.c_allocator, text.len) catch return;
+    defer glyphs.deinit();
+    for (text) |char| {
+        glyphs.append(font.glyph(char)) catch return;
+    }
+    cg.CGContextShowGlyphs(ctx, glyphs.items.ptr, glyphs.items.len);
 }
 
 pub const Image = extern struct {
@@ -226,7 +246,7 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     const rect = cg.CGRect{
         .origin = .{
             .x = dest.x - origin.x + DATA.current_camera.offset.x,
-            .y = dest.y - origin.y + DATA.current_camera.offset.y,
+            .y = dest.y - origin.y + DATA.current_camera.offset.y - (if (source.height < 0) dest.height else 0),
         },
         .size = .{
             .height = dest.height,
@@ -239,6 +259,31 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     // CGContextScaleCTM(DATA.context, x_scale, y_scale);
     cg.CGContextDrawImage(DATA.context, into_cg_rect(rect), cropped);
     // CGContextRestoreGState(DATA.context);
+}
+
+pub const Font = extern struct {
+    font: cg.CGFontRef,
+    offset: u16,
+
+    fn glyph(self: Font, char: u8) cg.CGGlyph {
+        return char - self.offset;
+    }
+};
+
+pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int, fontSize: c_int, codepoints: ?[*]c_int, codepointCount: c_int) Font {
+    _ = fileType;
+    _ = fontSize;
+    _ = codepoints;
+    const data = cf.CFDataCreate(null, fileData, dataSize);
+    const provider = cg.CGDataProviderCreateWithCFData(data);
+    return .{
+        .font = cg.CGFontCreateWithDataProvider(provider),
+        .offset = @intCast(codepointCount),
+    };
+}
+
+pub export fn UnloadFont(font: Font) void {
+    font.font.deinit();
 }
 
 extern fn CGContextSaveGState(c: ?cg.CGContextRef) void;
