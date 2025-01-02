@@ -229,12 +229,12 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     _ = rotation;
     _ = tint;
 
-    // raylib flips the image if the source width or height is negative.
-    // const x_scale: cg.CGFloat = if (source.width > 0) 1 else -1;
-    // const x_offset: cg.CGFloat = if (x_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenWidth())) - dest.width);
-    // const y_scale: cg.CGFloat = if (source.height > 0) 1 else -1;
-    // TODO: this is just a hardcoded value, calculate better
-    // const y_offset: cg.CGFloat = if (y_scale == 1) 0 else (@as(f32, @floatFromInt(GetScreenHeight()))) - dest.y + dest.height + 90;
+    const screen_height: cg.CGFloat = @floatFromInt(GetScreenHeight());
+
+    // TODO: flipping only works in the Y axis.
+    // flip the image if the source width or height is negative.
+    const y_flipped = source.height < 0;
+    const x_flipped = false;
 
     const _source = cg.CGRect{
         .origin = .{ .x = source.x, .y = source.y },
@@ -243,7 +243,7 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     const cropped = cg.CGImageCreateWithImageInRect(texture, _source);
     defer cropped.deinit();
 
-    const rect = cg.CGRect{
+    var rect = cg.CGRect{
         .origin = .{
             .x = dest.x - origin.x + DATA.current_camera.offset.x,
             .y = dest.y - origin.y + DATA.current_camera.offset.y - (if (source.height < 0) dest.height else 0),
@@ -254,11 +254,15 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
         },
     };
 
-    // CGContextSaveGState(DATA.context);
-    // CGContextTranslateCTM(DATA.context, x_offset, y_offset);
-    // CGContextScaleCTM(DATA.context, x_scale, y_scale);
-    cg.CGContextDrawImage(DATA.context, into_cg_rect(rect), cropped);
-    // CGContextRestoreGState(DATA.context);
+    const ctx = DATA.context orelse return;
+    cg.CGContextSaveGState(ctx);
+    defer cg.CGContextRestoreGState(ctx);
+    if (y_flipped or x_flipped) {
+        cg.CGContextTranslateCTM(ctx, 0, screen_height);
+        cg.CGContextScaleCTM(ctx, 1, if (y_flipped) -1 else 1);
+        rect.origin.y = screen_height - rect.origin.y - rect.size.height;
+    }
+    cg.CGContextDrawImage(ctx, into_cg_rect(rect), cropped);
 }
 
 pub const Font = extern struct {
@@ -285,12 +289,6 @@ pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8,
 pub export fn UnloadFont(font: Font) void {
     font.font.deinit();
 }
-
-extern fn CGContextSaveGState(c: ?cg.CGContextRef) void;
-extern fn CGContextRestoreGState(c: ?cg.CGContextRef) void;
-
-extern fn CGContextTranslateCTM(c: ?cg.CGContextRef, tx: cg.CGFloat, ty: cg.CGFloat) void;
-extern fn CGContextScaleCTM(c: ?cg.CGContextRef, sx: cg.CGFloat, sy: cg.CGFloat) void;
 
 pub export fn GetMousePosition() Vector2 {
     const last = DATA.last_tap;

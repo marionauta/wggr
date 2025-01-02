@@ -33,6 +33,10 @@ const CGInterpolationQuality = enum(i32) {
     kCGInterpolationNone = 1,
 };
 
+pub extern fn CGContextSaveGState(c: ?CGContextRef) void;
+pub extern fn CGContextRestoreGState(c: ?CGContextRef) void;
+pub extern fn CGContextTranslateCTM(c: ?CGContextRef, tx: CGFloat, ty: CGFloat) void;
+pub extern fn CGContextScaleCTM(c: ?CGContextRef, sx: CGFloat, sy: CGFloat) void;
 pub extern fn CGContextSetInterpolationQuality(c: ?CGContextRef, quality: CGInterpolationQuality) void;
 pub extern fn CGContextSetRGBFillColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
 pub extern fn CGContextSetRGBStrokeColor(c: ?CGContextRef, red: CGFloat, blue: CGFloat, green: CGFloat, alpha: CGFloat) void;
