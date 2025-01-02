@@ -127,13 +127,16 @@ pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color)
     const camera = DATA.current_camera;
     const rect = cg.CGRect{
         .origin = cg.CGPoint{
-            .x = rec.x + camera.offset.x,
-            .y = rec.y + camera.offset.y,
+            .x = rec.x + (lineThick / 2) + camera.offset.x,
+            .y = rec.y + (lineThick / 2) + camera.offset.y,
         },
-        .size = cg.CGSize{ .width = rec.width, .height = rec.height },
+        .size = cg.CGSize{
+            .width = rec.width - lineThick,
+            .height = rec.height - lineThick,
+        },
     };
     if (DATA.context) |ctx| {
-        set_rgba_stroke_color(DATA.context, color);
+        set_rgba_stroke_color(ctx, color);
         ctx.stroke_rect(into_cg_rect(rect), lineThick);
     }
 }
@@ -405,7 +408,7 @@ fn set_rgba_fill_color(c: ?cg.CGContextRef, color: Color) void {
 }
 
 fn set_rgba_stroke_color(c: ?cg.CGContextRef, color: Color) void {
-    cg.CGContextSetRGBFillColor(
+    cg.CGContextSetRGBStrokeColor(
         c,
         @as(cg.CGFloat, @floatFromInt(color.r)) / 255.0,
         @as(cg.CGFloat, @floatFromInt(color.g)) / 255.0,

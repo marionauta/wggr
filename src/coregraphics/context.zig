@@ -43,6 +43,8 @@ pub extern fn CGContextSetRGBStrokeColor(c: ?CGContextRef, red: CGFloat, blue: C
 pub extern fn CGContextFillEllipseInRect(c: ?CGContextRef, rect: CGRect) void;
 pub extern fn CGContextFillRect(c: ?CGContextRef, rect: CGRect) void;
 pub extern fn CGContextStrokeRect(c: ?CGContextRef, rect: CGRect) void;
+/// Sets the line width for a graphics context.
+/// The default line width is 1 unit. When stroked, the line straddles the path, with half of the total width on either side.
 pub extern fn CGContextSetLineWidth(c: ?CGContextRef, width: CGFloat) void;
 pub extern fn CGContextSetCharacterSpacing(c: ?CGContextRef, spacing: CGFloat) void;
 pub extern fn CGContextSetFont(c: ?CGContextRef, font: font.CGFontRef) void;
