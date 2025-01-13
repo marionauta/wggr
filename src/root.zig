@@ -18,6 +18,14 @@ pub const Color = extern struct {
     g: u8,
     b: u8,
     a: u8,
+
+    fn is(self: Color, other: Color) bool {
+        return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a;
+    }
+
+    fn is_white(self: Color) bool {
+        return self.is(.{ .r = 255, .g = 255, .b = 255, .a = 255 });
+    }
 };
 
 pub const Rectangle = extern struct {
@@ -102,8 +110,10 @@ pub export fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
         },
         .size = cg.CGSize{ .width = radius * 2, .height = radius * 2 },
     };
-    set_rgba_fill_color(DATA.context, color);
-    if (DATA.context) |ctx| ctx.fill_ellipse_in_rect(into_cg_rect(rect));
+    if (DATA.context) |ctx| {
+        ctx.set_fill_color(color);
+        ctx.fill_ellipse_in_rect(into_cg_rect(rect));
+    }
 }
 
 /// Draw a color-filled rectangle
@@ -117,7 +127,7 @@ pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
         .size = cg.CGSize{ .width = rec.width, .height = rec.height },
     };
     if (DATA.context) |ctx| {
-        set_rgba_fill_color(DATA.context, color);
+        ctx.set_fill_color(color);
         ctx.fill_rect(into_cg_rect(rect));
     }
 }
@@ -136,7 +146,7 @@ pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color)
         },
     };
     if (DATA.context) |ctx| {
-        set_rgba_stroke_color(ctx, color);
+        ctx.set_stroke_color(color);
         ctx.stroke_rect(into_cg_rect(rect), lineThick);
     }
 }
@@ -163,7 +173,7 @@ pub fn DrawTextEx(font: Font, text: [:0]const u8, position: Vector2, fontSize: f
     cg.CGContextSetFont(ctx, font.font);
     cg.CGContextSetFontSize(ctx, fontSize);
     cg.CGContextSetCharacterSpacing(ctx, spacing);
-    set_rgba_fill_color(ctx, tint);
+    ctx.set_fill_color(tint);
     const point = into_cg_point(.{ .x = position.x, .y = position.y + fontSize });
     cg.CGContextSetTextPosition(ctx, point.x, point.y);
     var glyphs = std.ArrayList(cg.CGGlyph).initCapacity(std.heap.c_allocator, text.len) catch return;
@@ -227,10 +237,10 @@ pub export fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32
     DrawTexturePro(texture, source, dest, Vector2{}, rotation, tint);
 }
 
+/// Draw a part of a texture defined by a rectangle.
+/// `rotation` is intentionally ignored.
 pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectangle, origin: Vector2, rotation: f32, tint: Color) void {
-    // TODO: rotation and tint are ignored.
     _ = rotation;
-    _ = tint;
 
     const screen_height: cg.CGFloat = @floatFromInt(GetScreenHeight());
 
@@ -265,7 +275,17 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
         cg.CGContextScaleCTM(ctx, 1, if (y_flipped) -1 else 1);
         rect.origin.y = screen_height - rect.origin.y - rect.size.height;
     }
-    cg.CGContextDrawImage(ctx, into_cg_rect(rect), cropped);
+    const cg_rect = into_cg_rect(rect);
+    cg.CGContextDrawImage(ctx, cg_rect, cropped);
+
+    if (!tint.is_white()) {
+        cg.CGContextSetBlendMode(ctx, .multiply);
+        defer cg.CGContextSetBlendMode(ctx, .normal);
+        // The following line has terrible performance
+        // cg.CGContextClipToMask(ctx, cg_rect, cropped);
+        ctx.set_fill_color(tint);
+        ctx.fill_rect(cg_rect);
+    }
 }
 
 pub const Font = extern struct {
@@ -334,26 +354,6 @@ pub export fn IsKeyPressed(key: c_int) bool {
 pub export fn IsKeyReleased(key: c_int) bool {
     _ = key;
     return false;
-}
-
-fn set_rgba_fill_color(c: ?cg.CGContextRef, color: Color) void {
-    cg.CGContextSetRGBFillColor(
-        c,
-        @as(cg.CGFloat, @floatFromInt(color.r)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.g)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.b)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.a)) / 255.0,
-    );
-}
-
-fn set_rgba_stroke_color(c: ?cg.CGContextRef, color: Color) void {
-    cg.CGContextSetRGBStrokeColor(
-        c,
-        @as(cg.CGFloat, @floatFromInt(color.r)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.g)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.b)) / 255.0,
-        @as(cg.CGFloat, @floatFromInt(color.a)) / 255.0,
-    );
 }
 
 fn into_cg_point(point: cg.CGPoint) cg.CGPoint {
