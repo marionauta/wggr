@@ -326,67 +326,6 @@ pub export fn GetMouseWheelMove() f32 {
     return DATA.last_wheel_move;
 }
 
-/// Check collision between two rectangles
-pub export fn CheckCollisionRecs(rec1: Rectangle, rec2: Rectangle) bool {
-    return ((rec1.x < (rec2.x + rec2.width) and (rec1.x + rec1.width) > rec2.x) and (rec1.y < (rec2.y + rec2.height) and (rec1.y + rec1.height) > rec2.y));
-}
-
-/// Check collision between circle and rectangle
-pub export fn CheckCollisionCircleRec(center: Vector2, radius: f32, rec: Rectangle) bool {
-    const recCenterX = rec.x + rec.width / 2.0;
-    const recCenterY = rec.y + rec.height / 2.0;
-
-    const dx = @abs(center.x - recCenterX);
-    const dy = @abs(center.y - recCenterY);
-
-    if (dx > (rec.width / 2.0 + radius)) {
-        return false;
-    }
-    if (dy > (rec.height / 2.0 + radius)) {
-        return false;
-    }
-
-    if (dx <= (rec.width / 2.0)) {
-        return true;
-    }
-    if (dy <= (rec.height / 2.0)) {
-        return true;
-    }
-
-    const cornerDistanceSq = (dx - rec.width / 2.0) * (dx - rec.width / 2.0) +
-        (dy - rec.height / 2.0) * (dy - rec.height / 2.0);
-
-    return (cornerDistanceSq <= (radius * radius));
-}
-
-/// Check if point is inside rectangle
-pub export fn CheckCollisionPointRec(point: Vector2, rec: Rectangle) bool {
-    return (point.x >= rec.x) and (point.x < (rec.x + rec.width)) and (point.y >= rec.y) and (point.y < (rec.y + rec.height));
-}
-
-/// Get collision rectangle for two rectangles collision
-pub export fn GetCollisionRec(rec1: Rectangle, rec2: Rectangle) Rectangle {
-    var overlap = Rectangle{};
-
-    const left = if (rec1.x > rec2.x) rec1.x else rec2.x;
-    const right1 = rec1.x + rec1.width;
-    const right2 = rec2.x + rec2.width;
-    const right = if (right1 < right2) right1 else right2;
-    const top = if (rec1.y > rec2.y) rec1.y else rec2.y;
-    const bottom1 = rec1.y + rec1.height;
-    const bottom2 = rec2.y + rec2.height;
-    const bottom = if (bottom1 < bottom2) bottom1 else bottom2;
-
-    if ((left < right) and (top < bottom)) {
-        overlap.x = left;
-        overlap.y = top;
-        overlap.width = right - left;
-        overlap.height = bottom - top;
-    }
-
-    return overlap;
-}
-
 pub export fn IsKeyPressed(key: c_int) bool {
     _ = key;
     return false;
