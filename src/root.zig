@@ -207,7 +207,9 @@ pub const Texture2D = cg.CGImageRef;
 
 pub export fn LoadTextureFromImage(image: Image) Texture2D {
     const data = cf.CFDataCreate(null, image.data, image.dataSize);
+    defer data.deinit();
     const provider = cg.CGDataProviderCreateWithCFData(data);
+    defer provider.deinit();
     return switch (image.fileType) {
         .png => cg.CGImageCreateWithPNGDataProvider(provider, null, false, .kCGRenderingIntentDefault),
     };
@@ -302,7 +304,9 @@ pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8,
     _ = fontSize;
     _ = codepoints;
     const data = cf.CFDataCreate(null, fileData, dataSize);
+    defer data.deinit();
     const provider = cg.CGDataProviderCreateWithCFData(data);
+    defer provider.deinit();
     return .{
         .font = cg.CGFontCreateWithDataProvider(provider),
         .offset = @intCast(codepointCount),
