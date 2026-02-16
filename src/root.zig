@@ -56,42 +56,42 @@ pub const KEY_SPACE = 32;
 pub const KEY_P = 80;
 pub const KEY_W = 87;
 
-pub export fn IsWindowFocused() bool {
+pub fn IsWindowFocused() bool {
     return DATA.window_focused;
 }
 
-pub export fn GetFrameTime() f32 {
+pub fn GetFrameTime() f32 {
     return DATA.frame_time;
 }
 
-pub export fn GetScreenWidth() c_int {
+pub fn GetScreenWidth() c_int {
     const ctx = DATA.context orelse return 0;
     return @intCast(ctx.get_width());
 }
 
-pub export fn GetScreenHeight() c_int {
+pub fn GetScreenHeight() c_int {
     const ctx = DATA.context orelse return 0;
     return @intCast(ctx.get_height());
 }
 
-pub export fn BeginDrawing() void {
+pub fn BeginDrawing() void {
     cg.context.CGContextSetInterpolationQuality(DATA.context, .kCGInterpolationNone);
 }
 
-pub export fn EndDrawing() void {
+pub fn EndDrawing() void {
     DATA.last_tap = cg.CGPoint.ZERO;
     DATA.last_wheel_move = 0;
 }
 
-pub export fn BeginMode2D(camera: Camera2D) void {
+pub fn BeginMode2D(camera: Camera2D) void {
     DATA.current_camera = camera;
 }
 
-pub export fn EndMode2D() void {
+pub fn EndMode2D() void {
     DATA.current_camera = Camera2D.default();
 }
 
-pub export fn ClearBackground(color: Color) void {
+pub fn ClearBackground(color: Color) void {
     const camera = DATA.current_camera;
     const rec = Rectangle{
         .x = 0 - camera.offset.x,
@@ -103,7 +103,7 @@ pub export fn ClearBackground(color: Color) void {
 }
 
 /// Draw a color-filled circle (Vector version)
-pub export fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
+pub fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
     const camera = DATA.current_camera;
     const rect = cg.CGRect{
         .origin = cg.CGPoint{
@@ -119,7 +119,7 @@ pub export fn DrawCircleV(center: Vector2, radius: f32, color: Color) void {
 }
 
 /// Draw a color-filled rectangle
-pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
+pub fn DrawRectangleRec(rec: Rectangle, color: Color) void {
     const camera = DATA.current_camera;
     const rect = cg.CGRect{
         .origin = cg.CGPoint{
@@ -135,7 +135,7 @@ pub export fn DrawRectangleRec(rec: Rectangle, color: Color) void {
 }
 
 /// Draw rectangle outline with extended parameters
-pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color) void {
+pub fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color) void {
     const camera = DATA.current_camera;
     const rect = cg.CGRect{
         .origin = cg.CGPoint{
@@ -196,19 +196,19 @@ pub const Image = extern struct {
     fileType: FileType,
 };
 
-pub export fn LoadImageFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int) Image {
+pub fn LoadImageFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int) Image {
     _ = fileType; // ignore, use png always
     const image = Image{ .data = fileData, .dataSize = dataSize, .fileType = .png };
     return image;
 }
 
-pub export fn UnloadImage(image: Image) void {
+pub fn UnloadImage(image: Image) void {
     _ = image;
 }
 
 pub const Texture2D = cg.CGImageRef;
 
-pub export fn LoadTextureFromImage(image: Image) Texture2D {
+pub fn LoadTextureFromImage(image: Image) Texture2D {
     const data = cf.data.CFDataCreate(null, image.data, image.dataSize);
     defer data.deinit();
     const provider = cg.data_provider.CGDataProviderCreateWithCFData(data);
@@ -218,16 +218,16 @@ pub export fn LoadTextureFromImage(image: Image) Texture2D {
     };
 }
 
-pub export fn UnloadTexture(texture: Texture2D) void {
+pub fn UnloadTexture(texture: Texture2D) void {
     texture.deinit();
 }
 
-pub export fn DrawTexture(texture: Texture2D, posX: c_int, posY: c_int, tint: Color) void {
+pub fn DrawTexture(texture: Texture2D, posX: c_int, posY: c_int, tint: Color) void {
     const position = Vector2{ .x = @floatFromInt(posX), .y = @floatFromInt(posY) };
     DrawTextureEx(texture, position, 0, 1, tint);
 }
 
-pub export fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32, scale: f32, tint: Color) void {
+pub fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32, scale: f32, tint: Color) void {
     const source = Rectangle{
         .width = @floatFromInt(texture.get_width()),
         .height = @floatFromInt(texture.get_height()),
@@ -244,7 +244,7 @@ pub export fn DrawTextureEx(texture: Texture2D, position: Vector2, rotation: f32
 
 /// Draw a part of a texture defined by a rectangle.
 /// `rotation` is intentionally ignored.
-pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectangle, origin: Vector2, rotation: f32, tint: Color) void {
+pub fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectangle, origin: Vector2, rotation: f32, tint: Color) void {
     _ = rotation;
 
     const screen_height: cg.CGFloat = @floatFromInt(GetScreenHeight());
@@ -302,7 +302,7 @@ pub const Font = extern struct {
     }
 };
 
-pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int, fontSize: c_int, codepoints: ?[*]c_int, codepointCount: c_int) Font {
+pub fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8, dataSize: c_int, fontSize: c_int, codepoints: ?[*]c_int, codepointCount: c_int) Font {
     _ = fileType;
     _ = fontSize;
     _ = codepoints;
@@ -316,11 +316,11 @@ pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8,
     };
 }
 
-pub export fn UnloadFont(font: Font) void {
+pub fn UnloadFont(font: Font) void {
     font.font.deinit();
 }
 
-pub export fn GetMousePosition() Vector2 {
+pub fn GetMousePosition() Vector2 {
     const last = DATA.last_tap;
     return Vector2{ .x = @floatCast(last.x), .y = @floatCast(last.y) };
 }
@@ -332,33 +332,33 @@ pub const MouseButton = enum(c_int) {
 pub const MOUSE_BUTTON_LEFT = @intFromEnum(MouseButton.MOUSE_BUTTON_LEFT);
 
 /// Check if a mouse button has been pressed once (currently the same as IsMouseButtonReleased)
-pub export fn IsMouseButtonPressed(button: c_int) bool {
+pub fn IsMouseButtonPressed(button: c_int) bool {
     return IsMouseButtonReleased(button);
 }
 
 /// Check if a mouse button is being pressed (currently always false)
-pub export fn IsMouseButtonDown(button: c_int) bool {
+pub fn IsMouseButtonDown(button: c_int) bool {
     _ = button;
     return false;
 }
 
 /// Check if a mouse button has been released once
-pub export fn IsMouseButtonReleased(button: c_int) bool {
+pub fn IsMouseButtonReleased(button: c_int) bool {
     _ = button;
     const last = GetMousePosition();
     return last.x != 0 and last.y != 0;
 }
 
-pub export fn GetMouseWheelMove() f32 {
+pub fn GetMouseWheelMove() f32 {
     return DATA.last_wheel_move;
 }
 
-pub export fn IsKeyPressed(key: c_int) bool {
+pub fn IsKeyPressed(key: c_int) bool {
     _ = key;
     return false;
 }
 
-pub export fn IsKeyReleased(key: c_int) bool {
+pub fn IsKeyReleased(key: c_int) bool {
     _ = key;
     return false;
 }
