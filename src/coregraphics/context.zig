@@ -10,7 +10,7 @@ const CGBlendMode = @import("blend_mode.zig").CGBlendMode;
 const CGFloat = types.CGFloat;
 const CGRect = types.CGRect;
 
-pub const CGContextRef = *extern opaque {
+pub const CGContextRef = *opaque {
     pub fn fill_ellipse_in_rect(self: CGContextRef, rect: CGRect) void {
         CGContextFillEllipseInRect(self, rect);
     }

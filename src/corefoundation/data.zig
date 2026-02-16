@@ -1,6 +1,6 @@
 const root = @import("root.zig");
 
-pub const CFDataRef = *extern opaque {
+pub const CFDataRef = *opaque {
     pub fn deinit(self: ?CFDataRef) void {
         if (self == null) return;
         return root.CFRelease(@ptrCast(self));

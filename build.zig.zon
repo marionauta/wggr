@@ -1,6 +1,7 @@
 .{
-    .name = "wggr",
+    .name = .wggr,
     .version = "0.0.0",
+    .fingerprint = 0xe8377ec28912483,
     .paths = .{
         "src",
         "build.zig",

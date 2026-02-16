@@ -14,10 +14,10 @@ const PlatformData = extern struct {
 export var DATA: PlatformData = .{};
 
 pub const Color = extern struct {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    r: u8 = 0,
+    g: u8 = 0,
+    b: u8 = 0,
+    a: u8 = 0,
 
     fn is(self: Color, other: Color) bool {
         return self.r == other.r and self.g == other.g and self.b == other.b and self.a == other.a;
@@ -65,15 +65,17 @@ pub export fn GetFrameTime() f32 {
 }
 
 pub export fn GetScreenWidth() c_int {
-    return @intCast(DATA.context.?.get_width());
+    const ctx = DATA.context orelse return 0;
+    return @intCast(ctx.get_width());
 }
 
 pub export fn GetScreenHeight() c_int {
-    return @intCast(DATA.context.?.get_height());
+    const ctx = DATA.context orelse return 0;
+    return @intCast(ctx.get_height());
 }
 
 pub export fn BeginDrawing() void {
-    cg.CGContextSetInterpolationQuality(DATA.context, .kCGInterpolationNone);
+    cg.context.CGContextSetInterpolationQuality(DATA.context, .kCGInterpolationNone);
 }
 
 pub export fn EndDrawing() void {
@@ -153,13 +155,13 @@ pub export fn DrawRectangleLinesEx(rec: Rectangle, lineThick: f32, color: Color)
 
 /// Measure string size for Font
 pub fn MeasureTextEx(font: Font, text: [:0]const u8, fontSize: f32, spacing: f32) Vector2 {
-    const units: f32 = @floatFromInt(cg.CGFontGetUnitsPerEm(font.font));
+    const units: f32 = @floatFromInt(cg.font.CGFontGetUnitsPerEm(font.font));
     var res = Vector2{ .y = fontSize };
     var glyph = [1]cg.CGGlyph{0};
     var advance = [1]c_int{0};
     for (text) |char| {
         glyph[0] = font.glyph(char);
-        if (!cg.CGFontGetGlyphAdvances(font.font, &glyph, 1, &advance)) {
+        if (!cg.font.CGFontGetGlyphAdvances(font.font, &glyph, 1, &advance)) {
             return res;
         }
         res.x += spacing + @as(f32, @floatFromInt(advance[0])) / units * fontSize;
@@ -170,18 +172,19 @@ pub fn MeasureTextEx(font: Font, text: [:0]const u8, fontSize: f32, spacing: f32
 /// Draw text using font and additional parameters
 pub fn DrawTextEx(font: Font, text: [:0]const u8, position: Vector2, fontSize: f32, spacing: f32, tint: Color) void {
     const ctx = DATA.context orelse return;
-    cg.CGContextSetFont(ctx, font.font);
-    cg.CGContextSetFontSize(ctx, fontSize);
-    cg.CGContextSetCharacterSpacing(ctx, spacing);
+    cg.context.CGContextSetFont(ctx, font.font);
+    cg.context.CGContextSetFontSize(ctx, fontSize);
+    cg.context.CGContextSetCharacterSpacing(ctx, spacing);
     ctx.set_fill_color(tint);
     const point = into_cg_point(.{ .x = position.x, .y = position.y + fontSize });
-    cg.CGContextSetTextPosition(ctx, point.x, point.y);
-    var glyphs = std.ArrayList(cg.CGGlyph).initCapacity(std.heap.c_allocator, text.len) catch return;
-    defer glyphs.deinit();
+    cg.context.CGContextSetTextPosition(ctx, point.x, point.y);
+    const allocator = std.heap.c_allocator;
+    var glyphs = std.ArrayList(cg.CGGlyph).initCapacity(allocator, text.len) catch return;
+    defer glyphs.deinit(allocator);
     for (text) |char| {
-        glyphs.append(font.glyph(char)) catch return;
+        glyphs.append(allocator, font.glyph(char)) catch return;
     }
-    cg.CGContextShowGlyphs(ctx, glyphs.items.ptr, glyphs.items.len);
+    cg.context.CGContextShowGlyphs(ctx, glyphs.items.ptr, glyphs.items.len);
 }
 
 pub const Image = extern struct {
@@ -206,12 +209,12 @@ pub export fn UnloadImage(image: Image) void {
 pub const Texture2D = cg.CGImageRef;
 
 pub export fn LoadTextureFromImage(image: Image) Texture2D {
-    const data = cf.CFDataCreate(null, image.data, image.dataSize);
+    const data = cf.data.CFDataCreate(null, image.data, image.dataSize);
     defer data.deinit();
-    const provider = cg.CGDataProviderCreateWithCFData(data);
+    const provider = cg.data_provider.CGDataProviderCreateWithCFData(data);
     defer provider.deinit();
     return switch (image.fileType) {
-        .png => cg.CGImageCreateWithPNGDataProvider(provider, null, false, .kCGRenderingIntentDefault),
+        .png => cg.image.CGImageCreateWithPNGDataProvider(provider, null, false, .kCGRenderingIntentDefault),
     };
 }
 
@@ -255,7 +258,7 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
         .origin = .{ .x = source.x, .y = source.y },
         .size = .{ .width = @abs(source.width), .height = @abs(source.height) },
     };
-    const cropped = cg.CGImageCreateWithImageInRect(texture, _source);
+    const cropped = cg.image.CGImageCreateWithImageInRect(texture, _source);
     defer cropped.deinit();
 
     var rect = cg.CGRect{
@@ -270,21 +273,21 @@ pub export fn DrawTexturePro(texture: Texture2D, source: Rectangle, dest: Rectan
     };
 
     const ctx = DATA.context orelse return;
-    cg.CGContextSaveGState(ctx);
-    defer cg.CGContextRestoreGState(ctx);
+    cg.context.CGContextSaveGState(ctx);
+    defer cg.context.CGContextRestoreGState(ctx);
     if (y_flipped or x_flipped) {
-        cg.CGContextTranslateCTM(ctx, 0, screen_height);
-        cg.CGContextScaleCTM(ctx, 1, if (y_flipped) -1 else 1);
+        cg.context.CGContextTranslateCTM(ctx, 0, screen_height);
+        cg.context.CGContextScaleCTM(ctx, 1, if (y_flipped) -1 else 1);
         rect.origin.y = screen_height - rect.origin.y - rect.size.height;
     }
     const cg_rect = into_cg_rect(rect);
-    cg.CGContextDrawImage(ctx, cg_rect, cropped);
+    cg.context.CGContextDrawImage(ctx, cg_rect, cropped);
 
     if (!tint.is_white()) {
-        cg.CGContextSetBlendMode(ctx, .multiply);
-        defer cg.CGContextSetBlendMode(ctx, .normal);
+        cg.context.CGContextSetBlendMode(ctx, .multiply);
+        defer cg.context.CGContextSetBlendMode(ctx, .normal);
         // The following line has terrible performance
-        // cg.CGContextClipToMask(ctx, cg_rect, cropped);
+        // cg.context.CGContextClipToMask(ctx, cg_rect, cropped);
         ctx.set_fill_color(tint);
         ctx.fill_rect(cg_rect);
     }
@@ -303,12 +306,12 @@ pub export fn LoadFontFromMemory(fileType: [*:0]const u8, fileData: [*]const u8,
     _ = fileType;
     _ = fontSize;
     _ = codepoints;
-    const data = cf.CFDataCreate(null, fileData, dataSize);
+    const data = cf.data.CFDataCreate(null, fileData, dataSize);
     defer data.deinit();
-    const provider = cg.CGDataProviderCreateWithCFData(data);
+    const provider = cg.data_provider.CGDataProviderCreateWithCFData(data);
     defer provider.deinit();
     return .{
-        .font = cg.CGFontCreateWithDataProvider(provider),
+        .font = cg.font.CGFontCreateWithDataProvider(provider),
         .offset = @intCast(codepointCount),
     };
 }

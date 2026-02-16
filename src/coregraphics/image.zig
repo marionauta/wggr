@@ -2,7 +2,7 @@ const dp = @import("data_provider.zig");
 const cs = @import("color_space.zig");
 const t = @import("types.zig");
 
-pub const CGImageRef = *extern opaque {
+pub const CGImageRef = *opaque {
     pub fn get_width(self: CGImageRef) usize {
         return CGImageGetWidth(self);
     }

@@ -4,7 +4,7 @@ const types = @import("types.zig");
 pub const CGFontIndex = u16;
 pub const CGGlyph = CGFontIndex;
 
-pub const CGFontRef = *extern opaque {
+pub const CGFontRef = *opaque {
     pub fn init(provider: dp.CGDataProviderRef) CGFontRef {
         return CGFontCreateWithDataProvider(provider);
     }

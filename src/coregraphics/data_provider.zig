@@ -1,6 +1,6 @@
 const cf = @import("../corefoundation/root.zig");
 
-pub const CGDataProviderRef = *extern opaque {
+pub const CGDataProviderRef = *opaque {
     pub fn deinit(self: CGDataProviderRef) void {
         return CGDataProviderRelease(@ptrCast(self));
     }

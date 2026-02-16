@@ -1,5 +1,6 @@
-pub usingnamespace @import("data.zig");
+pub const data = @import("data.zig");
 
-pub const CFTypeRef = *extern opaque {};
+pub const CFDataRef = data.CFDataRef;
+pub const CFTypeRef = *opaque {};
 
 pub extern fn CFRelease(cf: CFTypeRef) void;
