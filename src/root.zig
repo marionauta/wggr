@@ -11,7 +11,10 @@ const PlatformData = extern struct {
     current_camera: Camera2D = Camera2D.default(),
 };
 
-export var DATA: PlatformData = .{};
+var DATA: *PlatformData = undefined;
+pub export fn set_platform_data(data: *PlatformData) callconv(.c) void {
+    DATA = data;
+}
 
 pub const Color = extern struct {
     r: u8 = 0,
