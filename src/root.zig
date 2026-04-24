@@ -191,7 +191,7 @@ pub fn DrawTextEx(font: Font, text: [:0]const u8, position: Vector2, fontSize: f
 }
 
 pub const Image = extern struct {
-    const FileType = enum {
+    const FileType = enum(u0) {
         png,
     };
     data: [*]const u8,
